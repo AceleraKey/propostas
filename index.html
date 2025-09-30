@@ -1,13 +1,1169 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="pt-BR">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Sistema de Propostas Unike - Geração Rápida de Orçamentos</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerador de Propostas Unike - Automação Premium</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .gradient-bg {
+            background: linear-gradient(135deg, #002B5B, #1A5F7A);
+        }
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        .step-indicator {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            transition: all 0.3s ease;
+        }
+        .step-active {
+            background: #D4AF37;
+            color: #002B5B;
+        }
+        .step-completed {
+            background: #4CAF50;
+            color: white;
+        }
+        .step-pending {
+            background: #E5E7EB;
+            color: #6B7280;
+        }
+        .upload-area {
+            border: 2px dashed #D1D5DB;
+            transition: all 0.3s ease;
+        }
+        .upload-area:hover {
+            border-color: #D4AF37;
+            background-color: #FEF3C7;
+        }
+        .upload-area.dragover {
+            border-color: #D4AF37;
+            background-color: #FEF3C7;
+        }
+        .environment-card {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .environment-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+        .environment-card.selected {
+            background: linear-gradient(135deg, #002B5B, #1A5F7A);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,43,91,0.3);
+        }
+        .loading {
+            display: none;
+        }
+        .loading.show {
+            display: flex;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <header class="gradient-bg text-white py-6">
+        <div class="container mx-auto px-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <img src="https://unike.acelerakey.com/unike-azul.png" alt="Unike Logo" class="h-12">
+                    <div>
+                        <h1 class="text-2xl font-bold">Gerador de Propostas</h1>
+                        <p class="text-blue-200">Unike Automação Premium</p>
+                    </div>
+                </div>
+                <div class="flex space-x-4">
+                    <button id="adminBtn" class="bg-yellow-500 hover:bg-yellow-600 text-blue-900 px-4 py-2 rounded-lg font-semibold transition-colors">
+                        <i class="fas fa-cog mr-2"></i>Admin
+                    </button>
+                    <button id="previewBtn" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-semibold transition-colors">
+                        <i class="fas fa-eye mr-2"></i>Preview
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Progress Steps -->
+    <div class="bg-white shadow-sm">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <div class="step-indicator step-active" id="step1">1</div>
+                    <span class="font-medium">Informações Básicas</span>
+                </div>
+                <div class="flex-1 h-1 bg-gray-200 mx-4">
+                    <div class="h-full bg-yellow-500 w-0 transition-all duration-500" id="progressBar"></div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="step-indicator step-pending" id="step2">2</div>
+                    <span class="font-medium text-gray-500">Fotos e Planta</span>
+                </div>
+                <div class="flex-1 h-1 bg-gray-200 mx-4">
+                    <div class="h-full bg-gray-200 w-0 transition-all duration-500"></div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="step-indicator step-pending" id="step3">3</div>
+                    <span class="font-medium text-gray-500">Ambientes</span>
+                </div>
+                <div class="flex-1 h-1 bg-gray-200 mx-4">
+                    <div class="h-full bg-gray-200 w-0 transition-all duration-500"></div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="step-indicator step-pending" id="step4">4</div>
+                    <span class="font-medium text-gray-500">Gerar Proposta</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container mx-auto px-4 py-8">
+        <!-- Step 1: Basic Information -->
+        <div id="step1-content" class="step-content">
+            <div class="bg-white rounded-xl shadow-lg p-8">
+                <h2 class="text-3xl font-bold text-gray-900 mb-6">
+                    <i class="fas fa-info-circle text-blue-600 mr-3"></i>
+                    Informações Básicas do Projeto
+                </h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <!-- Client Information -->
+                    <div class="space-y-6">
+                        <h3 class="text-xl font-semibold text-gray-800 border-b border-gray-200 pb-2">
+                            Dados do Cliente
+                        </h3>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Nome do Cliente</label>
+                            <input type="text" id="clientName" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Ex: João e Maria Silva">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Arquiteto/Designer</label>
+                            <input type="text" id="architectName" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Ex: GS Arquitetos">
+                        </div>
+                    </div>
+                    
+                    <!-- Project Configuration -->
+                    <div class="space-y-6">
+                        <h3 class="text-xl font-semibold text-gray-800 border-b border-gray-200 pb-2">
+                            Configuração do Projeto
+                        </h3>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-3">Categorias de Solução</label>
+                            <div class="space-y-3">
+                                <label class="flex items-center">
+                                    <input type="checkbox" id="automation" class="mr-3 h-5 w-5 text-blue-600 rounded focus:ring-blue-500" checked>
+                                    <span class="text-gray-700">Automação Residencial</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" id="sound" class="mr-3 h-5 w-5 text-blue-600 rounded focus:ring-blue-500">
+                                    <span class="text-gray-700">Sonorização</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" id="wiring" class="mr-3 h-5 w-5 text-blue-600 rounded focus:ring-blue-500">
+                                    <span class="text-gray-700">Cabeamento Estruturado</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" id="network" class="mr-3 h-5 w-5 text-blue-600 rounded focus:ring-blue-500">
+                                    <span class="text-gray-700">Rede e Wi-Fi</span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Observações Adicionais</label>
+                            <textarea id="observations" rows="4" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Informações especiais sobre o projeto..."></textarea>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex justify-end mt-8">
+                    <button id="nextStep1" class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-semibold transition-colors">
+                        Próximo <i class="fas fa-arrow-right ml-2"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 2: Photos and Floor Plan -->
+        <div id="step2-content" class="step-content hidden">
+            <div class="bg-white rounded-xl shadow-lg p-8">
+                <h2 class="text-3xl font-bold text-gray-900 mb-6">
+                    <i class="fas fa-images text-blue-600 mr-3"></i>
+                    Fotos e Planta Baixa
+                </h2>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- Hero Photos -->
+                    <div class="space-y-6">
+                        <h3 class="text-xl font-semibold text-gray-800 border-b border-gray-200 pb-2">
+                            Fotos para Hero Section
+                        </h3>
+                        
+                        <div class="upload-area rounded-lg p-8 text-center" id="heroUpload">
+                            <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-4"></i>
+                            <p class="text-gray-600 mb-2">Arraste e solte as fotos aqui ou clique para selecionar</p>
+                            <p class="text-sm text-gray-500">Formatos aceitos: JPG, PNG, WEBP (máx. 10MB cada)</p>
+                            <input type="file" id="heroPhotos" multiple accept="image/*" class="hidden">
+                        </div>
+                        
+                        <div id="heroPreview" class="grid grid-cols-2 gap-4"></div>
+                    </div>
+                    
+                    <!-- Floor Plan -->
+                    <div class="space-y-6">
+                        <h3 class="text-xl font-semibold text-gray-800 border-b border-gray-200 pb-2">
+                            Planta Baixa
+                        </h3>
+                        
+                        <div class="upload-area rounded-lg p-8 text-center" id="floorPlanUpload">
+                            <i class="fas fa-home text-4xl text-gray-400 mb-4"></i>
+                            <p class="text-gray-600 mb-2">Arraste e solte a planta baixa aqui ou clique para selecionar</p>
+                            <p class="text-sm text-gray-500">Formato aceito: PNG (máx. 20MB)</p>
+                            <input type="file" id="floorPlan" accept="image/png" class="hidden">
+                        </div>
+                        
+                        <div id="floorPlanPreview" class="text-center"></div>
+                    </div>
+                </div>
+                
+                <div class="flex justify-between mt-8">
+                    <button id="prevStep2" class="bg-gray-500 hover:bg-gray-600 text-white px-8 py-3 rounded-lg font-semibold transition-colors">
+                        <i class="fas fa-arrow-left mr-2"></i> Anterior
+                    </button>
+                    <button id="nextStep2" class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-semibold transition-colors">
+                        Próximo <i class="fas fa-arrow-right ml-2"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 3: Environment Configuration -->
+        <div id="step3-content" class="step-content hidden">
+            <div class="bg-white rounded-xl shadow-lg p-8">
+                <h2 class="text-3xl font-bold text-gray-900 mb-6">
+                    <i class="fas fa-home text-blue-600 mr-3"></i>
+                    Configuração dos Ambientes
+                </h2>
+                
+                <!-- Import/Export Section -->
+                <div class="bg-gray-50 rounded-lg p-6 mb-8">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">
+                        <i class="fas fa-upload text-blue-600 mr-2"></i>
+                        Importar/Exportar Ambientes
+                    </h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <!-- Import Coordinates -->
+                        <div class="space-y-3">
+                            <label class="block text-sm font-medium text-gray-700">Importar Coordenadas JSON</label>
+                            <textarea id="coordinatesInput" rows="6" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs font-mono" placeholder='Cole aqui o JSON com coordenadas...'></textarea>
+                            <button id="importCoordinates" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold transition-colors">
+                                <i class="fas fa-upload mr-2"></i>Importar Coordenadas
+                            </button>
+                        </div>
+                        
+                        <!-- Export Spreadsheet -->
+                        <div class="space-y-3">
+                            <label class="block text-sm font-medium text-gray-700">Exportar Planilha</label>
+                            <p class="text-sm text-gray-600">Gera planilha com ambientes e quantitativos</p>
+                            <button id="exportSpreadsheet" class="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-semibold transition-colors">
+                                <i class="fas fa-file-excel mr-2"></i>Exportar Excel
+                            </button>
+                        </div>
+                        
+                        <!-- Import Spreadsheet -->
+                        <div class="space-y-3">
+                            <label class="block text-sm font-medium text-gray-700">Importar Planilha</label>
+                            <input type="file" id="spreadsheetInput" accept=".csv,.xlsx,.xls" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                            <button id="importSpreadsheet" class="w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-semibold transition-colors">
+                                <i class="fas fa-download mr-2"></i>Importar Dados
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- Environment List -->
+                    <div class="space-y-6">
+                        <div class="flex justify-between items-center">
+                            <h3 class="text-xl font-semibold text-gray-800">Ambientes do Projeto</h3>
+                            <button id="addEnvironment" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-semibold transition-colors">
+                                <i class="fas fa-plus mr-2"></i>Adicionar
+                            </button>
+                        </div>
+                        
+                        <div id="environmentsList" class="space-y-4 max-h-96 overflow-y-auto">
+                            <!-- Environments will be added here dynamically -->
+                        </div>
+                    </div>
+                    
+                    <!-- Floor Plan with Coordinates -->
+                    <div class="space-y-6">
+                        <h3 class="text-xl font-semibold text-gray-800">Planta Baixa com Coordenadas</h3>
+                        
+                        <div id="floorPlanContainer" class="relative border-2 border-gray-300 rounded-lg overflow-hidden">
+                            <div id="floorPlanDisplay" class="text-center p-8 text-gray-500">
+                                <i class="fas fa-home text-4xl mb-4"></i>
+                                <p>Planta baixa será exibida aqui</p>
+                            </div>
+                            <svg id="floorPlanOverlay" class="absolute top-0 left-0 w-full h-full pointer-events-none" style="display: none;"></svg>
+                        </div>
+                        
+                        <div class="bg-blue-50 p-4 rounded-lg">
+                            <h4 class="font-semibold text-blue-900 mb-2">Como configurar coordenadas:</h4>
+                            <ol class="text-sm text-blue-800 space-y-1">
+                                <li>1. Clique em um ambiente na lista</li>
+                                <li>2. Clique nos pontos da planta para definir a área</li>
+                                <li>3. Pressione Enter para finalizar</li>
+                                <li>4. Configure os equipamentos do ambiente</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex justify-between mt-8">
+                    <button id="prevStep3" class="bg-gray-500 hover:bg-gray-600 text-white px-8 py-3 rounded-lg font-semibold transition-colors">
+                        <i class="fas fa-arrow-left mr-2"></i> Anterior
+                    </button>
+                    <button id="nextStep3" class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-semibold transition-colors">
+                        Próximo <i class="fas fa-arrow-right ml-2"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 4: Generate Proposal -->
+        <div id="step4-content" class="step-content hidden">
+            <div class="bg-white rounded-xl shadow-lg p-8">
+                <h2 class="text-3xl font-bold text-gray-900 mb-6">
+                    <i class="fas fa-file-alt text-blue-600 mr-3"></i>
+                    Gerar Proposta
+                </h2>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- Project Summary -->
+                    <div class="space-y-6">
+                        <h3 class="text-xl font-semibold text-gray-800 border-b border-gray-200 pb-2">
+                            Resumo do Projeto
+                        </h3>
+                        
+                        <div id="projectSummary" class="space-y-4">
+                            <!-- Summary will be generated here -->
+                        </div>
+                    </div>
+                    
+                    <!-- Preview -->
+                    <div class="space-y-6">
+                        <h3 class="text-xl font-semibold text-gray-800 border-b border-gray-200 pb-2">
+                            Preview da Proposta
+                        </h3>
+                        
+                        <div id="proposalPreview" class="border-2 border-gray-300 rounded-lg p-4 min-h-96">
+                            <div class="text-center text-gray-500">
+                                <i class="fas fa-file-alt text-4xl mb-4"></i>
+                                <p>Preview da proposta será exibido aqui</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex justify-between mt-8">
+                    <button id="prevStep4" class="bg-gray-500 hover:bg-gray-600 text-white px-8 py-3 rounded-lg font-semibold transition-colors">
+                        <i class="fas fa-arrow-left mr-2"></i> Anterior
+                    </button>
+                    <button id="generateProposal" class="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg font-semibold transition-colors">
+                        <i class="fas fa-download mr-2"></i> Gerar Proposta
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 loading">
+        <div class="bg-white rounded-lg p-8 text-center">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p class="text-gray-700">Gerando proposta...</p>
+        </div>
+    </div>
+
+    <!-- Admin Modal -->
+    <div id="adminModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg p-8 max-w-4xl w-full mx-4 max-h-96 overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold text-gray-900">Painel Administrativo</h3>
+                <button id="closeAdminModal" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <!-- Products Management -->
+                <div>
+                    <h4 class="text-lg font-semibold text-gray-800 mb-4">Gerenciar Produtos</h4>
+                    <div class="space-y-4">
+                        <button id="manageAutomationProducts" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors">
+                            Produtos de Automação
+                        </button>
+                        <button id="manageSoundProducts" class="w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors">
+                            Produtos de Sonorização
+                        </button>
+                        <button id="manageNetworkProducts" class="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors">
+                            Produtos de Rede
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Database Management -->
+                <div>
+                    <h4 class="text-lg font-semibold text-gray-800 mb-4">Gerenciar Banco de Dados</h4>
+                    <div class="space-y-4">
+                        <button id="exportDatabase" class="w-full bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg transition-colors">
+                            Exportar Dados
+                        </button>
+                        <button id="importDatabase" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors">
+                            Importar Dados
+                        </button>
+                        <button id="resetDatabase" class="w-full bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors">
+                            Resetar Banco
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let currentStep = 1;
+        let projectData = {
+            clientName: '',
+            architect: '',
+            categories: ['automation'],
+            observations: '',
+            heroImages: [],
+            floorPlan: null,
+            environments: [],
+            selectedProducts: {},
+            totalValue: 0
+        };
+
+        let productsData = {};
+        let environments = [];
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            loadProducts();
+            initializeEventListeners();
+            updateStepDisplay();
+        });
+
+        // Load products from API
+        async function loadProducts() {
+            try {
+                const response = await fetch('/api/products');
+                const result = await response.json();
+                if (result.success) {
+                    productsData = result.data;
+                }
+            } catch (error) {
+                console.error('Erro ao carregar produtos:', error);
+            }
+        }
+
+        // Initialize event listeners
+        function initializeEventListeners() {
+            // Step navigation
+            document.getElementById('nextStep1').addEventListener('click', () => nextStep());
+            document.getElementById('nextStep2').addEventListener('click', () => nextStep());
+            document.getElementById('nextStep3').addEventListener('click', () => nextStep());
+            document.getElementById('prevStep2').addEventListener('click', () => prevStep());
+            document.getElementById('prevStep3').addEventListener('click', () => prevStep());
+            document.getElementById('prevStep4').addEventListener('click', () => prevStep());
+
+            // Admin modal
+            document.getElementById('adminBtn').addEventListener('click', () => {
+                document.getElementById('adminModal').classList.remove('hidden');
+            });
+            document.getElementById('closeAdminModal').addEventListener('click', () => {
+                document.getElementById('adminModal').classList.add('hidden');
+            });
+
+            // Preview button
+            document.getElementById('previewBtn').addEventListener('click', generatePreview);
+
+            // Generate proposal
+            document.getElementById('generateProposal').addEventListener('click', generateProposal);
+
+            // File uploads
+            initializeFileUploads();
+
+            // Environment management
+            document.getElementById('addEnvironment').addEventListener('click', addEnvironment);
+
+            // Import/Export functionality
+            document.getElementById('importCoordinates').addEventListener('click', importCoordinatesFromJSON);
+            document.getElementById('exportSpreadsheet').addEventListener('click', exportToSpreadsheet);
+            document.getElementById('importSpreadsheet').addEventListener('click', importFromSpreadsheet);
+        }
+
+        // Step navigation
+        function nextStep() {
+            if (validateCurrentStep()) {
+                currentStep++;
+                updateStepDisplay();
+            }
+        }
+
+        function prevStep() {
+            currentStep--;
+            updateStepDisplay();
+        }
+
+        function validateCurrentStep() {
+            switch (currentStep) {
+                case 1:
+                    const clientName = document.getElementById('clientName').value.trim();
+                    if (!clientName) {
+                        alert('Por favor, informe o nome do cliente.');
+                        return false;
+                    }
+                    projectData.clientName = clientName;
+                    projectData.architect = document.getElementById('architectName').value.trim();
+                    projectData.observations = document.getElementById('observations').value.trim();
+                    
+                    // Get selected categories
+                    projectData.categories = [];
+                    ['automation', 'sound', 'wiring', 'network'].forEach(cat => {
+                        if (document.getElementById(cat).checked) {
+                            projectData.categories.push(cat);
+                        }
+                    });
+                    break;
+                case 2:
+                    // Validate that at least one image is uploaded
+                    if (projectData.heroImages.length === 0) {
+                        alert('Por favor, faça upload de pelo menos uma foto para o hero.');
+                        return false;
+                    }
+                    break;
+                case 3:
+                    // Validate that at least one environment is configured
+                    if (projectData.environments.length === 0) {
+                        alert('Por favor, configure pelo menos um ambiente.');
+                        return false;
+                    }
+                    break;
+            }
+            return true;
+        }
+
+        function updateStepDisplay() {
+            // Hide all step contents
+            document.querySelectorAll('.step-content').forEach(content => {
+                content.classList.add('hidden');
+            });
+
+            // Show current step content
+            document.getElementById(`step${currentStep}-content`).classList.remove('hidden');
+
+            // Update step indicators
+            for (let i = 1; i <= 4; i++) {
+                const stepEl = document.getElementById(`step${i}`);
+                stepEl.classList.remove('step-active', 'step-completed', 'step-pending');
+                
+                if (i < currentStep) {
+                    stepEl.classList.add('step-completed');
+                } else if (i === currentStep) {
+                    stepEl.classList.add('step-active');
+                } else {
+                    stepEl.classList.add('step-pending');
+                }
+            }
+
+            // Update progress bar
+            const progress = ((currentStep - 1) / 3) * 100;
+            document.getElementById('progressBar').style.width = `${progress}%`;
+
+            // Load step-specific content
+            if (currentStep === 3) {
+                loadEnvironments();
+            } else if (currentStep === 4) {
+                generateProjectSummary();
+            }
+        }
+
+        // File upload functionality
+        function initializeFileUploads() {
+            const heroUpload = document.getElementById('heroUpload');
+            const floorPlanUpload = document.getElementById('floorPlanUpload');
+            const heroPhotos = document.getElementById('heroPhotos');
+            const floorPlan = document.getElementById('floorPlan');
+
+            // Hero photos upload
+            heroUpload.addEventListener('click', () => heroPhotos.click());
+            heroUpload.addEventListener('dragover', handleDragOver);
+            heroUpload.addEventListener('drop', (e) => handleDrop(e, 'hero'));
+            heroPhotos.addEventListener('change', (e) => handleFileSelect(e, 'hero'));
+
+            // Floor plan upload
+            floorPlanUpload.addEventListener('click', () => floorPlan.click());
+            floorPlanUpload.addEventListener('dragover', handleDragOver);
+            floorPlanUpload.addEventListener('drop', (e) => handleDrop(e, 'floorPlan'));
+            floorPlan.addEventListener('change', (e) => handleFileSelect(e, 'floorPlan'));
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.currentTarget.classList.add('dragover');
+        }
+
+        function handleDrop(e, type) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('dragover');
+            const files = Array.from(e.dataTransfer.files);
+            handleFiles(files, type);
+        }
+
+        function handleFileSelect(e, type) {
+            const files = Array.from(e.target.files);
+            handleFiles(files, type);
+        }
+
+        async function handleFiles(files, type) {
+            for (const file of files) {
+                if (type === 'hero') {
+                    await uploadImage(file, 'hero');
+                } else if (type === 'floorPlan') {
+                    await uploadImage(file, 'floorPlan');
+                }
+            }
+        }
+
+        async function uploadImage(file, type) {
+            const formData = new FormData();
+            formData.append('image', file);
+            formData.append('type', type);
+
+            try {
+                const response = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    if (type === 'hero') {
+                        projectData.heroImages.push(result.data);
+                        displayHeroPreview();
+                    } else if (type === 'floorPlan') {
+                        projectData.floorPlan = result.data;
+                        displayFloorPlanPreview();
+                    }
+                }
+            } catch (error) {
+                console.error('Erro no upload:', error);
+                alert('Erro ao fazer upload da imagem.');
+            }
+        }
+
+        function displayHeroPreview() {
+            const preview = document.getElementById('heroPreview');
+            preview.innerHTML = projectData.heroImages.map(img => `
+                <div class="relative">
+                    <img src="${img.url}" alt="Hero" class="w-full h-32 object-cover rounded-lg">
+                    <button onclick="removeHeroImage('${img.id}')" class="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">
+                        ×
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function displayFloorPlanPreview() {
+            const preview = document.getElementById('floorPlanPreview');
+            preview.innerHTML = `
+                <div class="relative">
+                    <img src="${projectData.floorPlan.url}" alt="Planta Baixa" class="w-full h-64 object-contain rounded-lg">
+                    <button onclick="removeFloorPlan()" class="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">
+                        ×
+                    </button>
+                </div>
+            `;
+            
+            // Also update the floor plan display in step 3
+            displayFloorPlanWithCoordinates();
+        }
+
+        function removeHeroImage(imageId) {
+            projectData.heroImages = projectData.heroImages.filter(img => img.id !== imageId);
+            displayHeroPreview();
+        }
+
+        function removeFloorPlan() {
+            projectData.floorPlan = null;
+            document.getElementById('floorPlanPreview').innerHTML = '';
+        }
+
+        // Environment management
+        function addEnvironment() {
+            const name = prompt('Nome do ambiente:');
+            if (name) {
+                const environment = {
+                    id: Date.now().toString(),
+                    name: name,
+                    circuits: 0,
+                    tvs: 0,
+                    acs: 0,
+                    smartpads: 0,
+                    speakers: 0,
+                    coordinates: []
+                };
+                projectData.environments.push(environment);
+                loadEnvironments();
+            }
+        }
+
+        function loadEnvironments() {
+            const container = document.getElementById('environmentsList');
+            container.innerHTML = projectData.environments.map(env => `
+                <div class="environment-card bg-white p-4 rounded-lg shadow-md border" data-id="${env.id}">
+                    <div class="flex justify-between items-center mb-2">
+                        <h4 class="font-semibold">${env.name}</h4>
+                        <button onclick="removeEnvironment('${env.id}')" class="text-red-500 hover:text-red-700">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 text-sm">
+                        <div>
+                            <label class="block text-xs text-gray-600">Circuitos</label>
+                            <input type="number" value="${env.circuits}" onchange="updateEnvironment('${env.id}', 'circuits', this.value)" class="w-full px-2 py-1 border rounded">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-600">TVs</label>
+                            <input type="number" value="${env.tvs}" onchange="updateEnvironment('${env.id}', 'tvs', this.value)" class="w-full px-2 py-1 border rounded">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-600">Ar Cond.</label>
+                            <input type="number" value="${env.acs}" onchange="updateEnvironment('${env.id}', 'acs', this.value)" class="w-full px-2 py-1 border rounded">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-600">Smartpads</label>
+                            <input type="number" value="${env.smartpads}" onchange="updateEnvironment('${env.id}', 'smartpads', this.value)" class="w-full px-2 py-1 border rounded">
+                        </div>
+                        <div class="col-span-2">
+                            <label class="block text-xs text-gray-600">Outros Equipamentos</label>
+                            <input type="number" value="${env.speakers}" onchange="updateEnvironment('${env.id}', 'speakers', this.value)" class="w-full px-2 py-1 border rounded">
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            
+            // Update floor plan display with coordinates
+            displayFloorPlanWithCoordinates();
+        }
+
+        function updateEnvironment(id, field, value) {
+            const env = projectData.environments.find(e => e.id === id);
+            if (env) {
+                env[field] = parseInt(value) || 0;
+            }
+        }
+
+        function removeEnvironment(id) {
+            projectData.environments = projectData.environments.filter(e => e.id !== id);
+            loadEnvironments();
+        }
+
+        // Generate project summary
+        function generateProjectSummary() {
+            const summary = document.getElementById('projectSummary');
+            summary.innerHTML = `
+                <div class="bg-blue-50 p-4 rounded-lg">
+                    <h4 class="font-semibold text-blue-900 mb-2">Cliente</h4>
+                    <p class="text-blue-800">${projectData.clientName}</p>
+                </div>
+                <div class="bg-green-50 p-4 rounded-lg">
+                    <h4 class="font-semibold text-green-900 mb-2">Ambientes</h4>
+                    <p class="text-green-800">${projectData.environments.length} ambientes configurados</p>
+                </div>
+                <div class="bg-purple-50 p-4 rounded-lg">
+                    <h4 class="font-semibold text-purple-900 mb-2">Categorias</h4>
+                    <p class="text-purple-800">${projectData.categories.join(', ')}</p>
+                </div>
+            `;
+        }
+
+        // Generate preview
+        function generatePreview() {
+            const preview = document.getElementById('proposalPreview');
+            preview.innerHTML = `
+                <div class="text-center">
+                    <h3 class="text-xl font-bold mb-4">Preview da Proposta</h3>
+                    <p class="text-gray-600 mb-4">Cliente: ${projectData.clientName}</p>
+                    <p class="text-gray-600 mb-4">Ambientes: ${projectData.environments.length}</p>
+                    <p class="text-gray-600">Categorias: ${projectData.categories.join(', ')}</p>
+                </div>
+            `;
+        }
+
+        // Generate proposal
+        async function generateProposal() {
+            document.getElementById('loadingOverlay').classList.add('show');
+
+            try {
+                // Calculate total value
+                projectData.totalValue = calculateTotalValue();
+
+                // Save proposal
+                const response = await fetch('/api/proposals', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(projectData)
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    // Open proposal in new window
+                    const proposalWindow = window.open('', '_blank');
+                    proposalWindow.document.write(generateProposalHTML());
+                    proposalWindow.document.close();
+                }
+            } catch (error) {
+                console.error('Erro ao gerar proposta:', error);
+                alert('Erro ao gerar proposta.');
+            } finally {
+                document.getElementById('loadingOverlay').classList.remove('show');
+            }
+        }
+
+        function calculateTotalValue() {
+            let total = 0;
+            projectData.environments.forEach(env => {
+                // Add basic costs based on environment configuration
+                total += env.circuits * 150; // Circuit cost
+                total += env.tvs * 200; // TV control cost
+                total += env.acs * 300; // AC control cost
+                total += env.smartpads * 800; // Smartpad cost
+                total += env.speakers * 400; // Speaker cost
+            });
+            return total;
+        }
+
+        function generateProposalHTML() {
+            return `
+                <!DOCTYPE html>
+                <html lang="pt-BR">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>Proposta - ${projectData.clientName}</title>
+                    <script src="https://cdn.tailwindcss.com"></script>
+                </head>
+                <body class="bg-gray-100">
+                    <div class="container mx-auto p-8">
+                        <div class="bg-white rounded-lg shadow-lg p-8">
+                            <div class="text-center mb-8">
+                                <img src="https://unike.acelerakey.com/unike-azul.png" alt="Unike Logo" class="h-16 mx-auto mb-4">
+                                <h1 class="text-3xl font-bold text-gray-900">Proposta Comercial</h1>
+                                <p class="text-gray-600">Unike Automação Premium</p>
+                            </div>
+                            
+                            <div class="mb-8">
+                                <h2 class="text-2xl font-semibold mb-4">Dados do Projeto</h2>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <strong>Cliente:</strong> ${projectData.clientName}
+                                    </div>
+                                    <div>
+                                        <strong>Arquiteto:</strong> ${projectData.architect || 'Não informado'}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-8">
+                                <h2 class="text-2xl font-semibold mb-4">Ambientes Configurados</h2>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    ${projectData.environments.map(env => `
+                                        <div class="bg-gray-50 p-4 rounded-lg">
+                                            <h3 class="font-semibold">${env.name}</h3>
+                                            <p>Circuitos: ${env.circuits}</p>
+                                            <p>TVs: ${env.tvs}</p>
+                                            <p>Ar Condicionado: ${env.acs}</p>
+                                            <p>Smartpads: ${env.smartpads}</p>
+                                            <p>Outros Equipamentos: ${env.speakers}</p>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                            
+                            <div class="text-center">
+                                <div class="bg-blue-50 p-6 rounded-lg">
+                                    <h2 class="text-2xl font-bold text-blue-900 mb-2">Valor Total</h2>
+                                    <p class="text-4xl font-bold text-blue-600">R$ ${projectData.totalValue.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </body>
+                </html>
+            `;
+        }
+
+        // Import coordinates from JSON
+        function importCoordinatesFromJSON() {
+            const jsonInput = document.getElementById('coordinatesInput').value.trim();
+            
+            if (!jsonInput) {
+                alert('Por favor, cole o JSON com as coordenadas.');
+                return;
+            }
+
+            try {
+                const data = JSON.parse(jsonInput);
+                
+                if (!data.ambientes || !Array.isArray(data.ambientes)) {
+                    alert('Formato JSON inválido. Certifique-se de que contém um array "ambientes".');
+                    return;
+                }
+
+                // Clear existing environments
+                projectData.environments = [];
+
+                // Process each environment
+                data.ambientes.forEach(ambiente => {
+                    const environment = {
+                        id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+                        name: ambiente.nome,
+                        circuits: 0,
+                        tvs: 0,
+                        acs: 0,
+                        smartpads: 0,
+                        speakers: 0,
+                        coordinates: ambiente.coordenadas || []
+                    };
+                    projectData.environments.push(environment);
+                });
+
+                // Update display
+                loadEnvironments();
+                displayFloorPlanWithCoordinates();
+                
+                // Clear input
+                document.getElementById('coordinatesInput').value = '';
+                
+                alert(`Importados ${data.ambientes.length} ambientes com sucesso!`);
+                
+            } catch (error) {
+                console.error('Erro ao processar JSON:', error);
+                alert('Erro ao processar JSON. Verifique o formato e tente novamente.');
+            }
+        }
+
+        // Display floor plan with coordinates
+        function displayFloorPlanWithCoordinates() {
+            const container = document.getElementById('floorPlanContainer');
+            const display = document.getElementById('floorPlanDisplay');
+            const overlay = document.getElementById('floorPlanOverlay');
+            
+            if (!projectData.floorPlan) {
+                display.innerHTML = `
+                    <i class="fas fa-home text-4xl mb-4"></i>
+                    <p>Faça upload da planta baixa primeiro</p>
+                `;
+                overlay.style.display = 'none';
+                return;
+            }
+
+            // Show floor plan image
+            display.innerHTML = `
+                <img src="${projectData.floorPlan.url}" alt="Planta Baixa" class="w-full h-full object-contain">
+            `;
+            
+            // Show overlay with coordinates
+            overlay.style.display = 'block';
+            overlay.innerHTML = '';
+            
+            // Draw environment polygons
+            projectData.environments.forEach((env, index) => {
+                if (env.coordinates && env.coordinates.length > 0) {
+                    const polygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+                    const points = env.coordinates.map(coord => `${coord.x},${coord.y}`).join(' ');
+                    polygon.setAttribute('points', points);
+                    polygon.setAttribute('fill', `rgba(0, 43, 91, ${0.3 + (index * 0.1)})`);
+                    polygon.setAttribute('stroke', '#002B5B');
+                    polygon.setAttribute('stroke-width', '2');
+                    polygon.setAttribute('data-env-id', env.id);
+                    polygon.style.cursor = 'pointer';
+                    
+                    // Add click event to select environment
+                    polygon.addEventListener('click', () => {
+                        selectEnvironment(env.id);
+                    });
+                    
+                    overlay.appendChild(polygon);
+                    
+                    // Add environment label
+                    if (env.coordinates.length > 0) {
+                        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                        const centerX = env.coordinates.reduce((sum, coord) => sum + parseFloat(coord.x), 0) / env.coordinates.length;
+                        const centerY = env.coordinates.reduce((sum, coord) => sum + parseFloat(coord.y), 0) / env.coordinates.length;
+                        
+                        text.setAttribute('x', centerX + '%');
+                        text.setAttribute('y', centerY + '%');
+                        text.setAttribute('text-anchor', 'middle');
+                        text.setAttribute('dominant-baseline', 'middle');
+                        text.setAttribute('fill', '#002B5B');
+                        text.setAttribute('font-size', '12');
+                        text.setAttribute('font-weight', 'bold');
+                        text.setAttribute('pointer-events', 'none');
+                        text.textContent = env.name;
+                        
+                        overlay.appendChild(text);
+                    }
+                }
+            });
+        }
+
+        // Select environment when clicking on polygon
+        function selectEnvironment(envId) {
+            // Remove previous selection
+            document.querySelectorAll('.environment-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            
+            // Add selection to clicked environment
+            const envCard = document.querySelector(`[data-id="${envId}"]`);
+            if (envCard) {
+                envCard.classList.add('selected');
+            }
+        }
+
+        // Export to spreadsheet
+        function exportToSpreadsheet() {
+            if (projectData.environments.length === 0) {
+                alert('Nenhum ambiente para exportar.');
+                return;
+            }
+
+            // Prepare data for export
+            const exportData = projectData.environments.map(env => ({
+                'Ambiente': env.name,
+                'Circuitos': env.circuits || 0,
+                'TVs': env.tvs || 0,
+                'Ar Condicionado': env.acs || 0,
+                'Smartpads': env.smartpads || 0,
+                'Outros Equipamentos': env.speakers || 0
+            }));
+
+            // Create workbook
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.json_to_sheet(exportData);
+            
+            // Set column widths
+            ws['!cols'] = [
+                { wch: 20 }, // Ambiente
+                { wch: 10 }, // Circuitos
+                { wch: 10 }, // TVs
+                { wch: 15 }, // Ar Condicionado
+                { wch: 12 }, // Smartpads
+                { wch: 18 }  // Outros Equipamentos
+            ];
+
+            XLSX.utils.book_append_sheet(wb, ws, 'Ambientes');
+
+            // Generate filename
+            const filename = `ambientes_${projectData.clientName || 'projeto'}_${new Date().toISOString().split('T')[0]}.xlsx`;
+
+            // Download file
+            XLSX.writeFile(wb, filename);
+        }
+
+        // Import from spreadsheet
+        function importFromSpreadsheet() {
+            const fileInput = document.getElementById('spreadsheetInput');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert('Por favor, selecione um arquivo.');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const sheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[sheetName];
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+                    // Validate data structure
+                    if (jsonData.length === 0) {
+                        alert('Planilha vazia ou formato inválido.');
+                        return;
+                    }
+
+                    // Check if required columns exist
+                    const firstRow = jsonData[0];
+                    const requiredColumns = ['Ambiente', 'Circuitos', 'TVs', 'Ar Condicionado', 'Smartpads'];
+                    const missingColumns = requiredColumns.filter(col => !(col in firstRow));
+                    
+                    if (missingColumns.length > 0) {
+                        alert(`Colunas obrigatórias não encontradas: ${missingColumns.join(', ')}`);
+                        return;
+                    }
+
+                    // Update environments with spreadsheet data
+                    jsonData.forEach(row => {
+                        const envName = row['Ambiente'];
+                        const existingEnv = projectData.environments.find(env => env.name === envName);
+                        
+                        if (existingEnv) {
+                            existingEnv.circuits = parseInt(row['Circuitos']) || 0;
+                            existingEnv.tvs = parseInt(row['TVs']) || 0;
+                            existingEnv.acs = parseInt(row['Ar Condicionado']) || 0;
+                            existingEnv.smartpads = parseInt(row['Smartpads']) || 0;
+                            existingEnv.speakers = parseInt(row['Outros Equipamentos']) || 0;
+                        }
+                    });
+
+                    // Update display
+                    loadEnvironments();
+                    
+                    alert(`Dados importados com sucesso para ${jsonData.length} ambientes!`);
+                    
+                } catch (error) {
+                    console.error('Erro ao processar planilha:', error);
+                    alert('Erro ao processar planilha. Verifique o formato e tente novamente.');
+                }
+            };
+            
+            reader.readAsArrayBuffer(file);
+        }
+    </script>
+</body>
 </html>
