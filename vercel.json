@@ -1,5 +1,7 @@
 {
   "version": 2,
+  "buildCommand": "echo 'Build completed'",
+  "outputDirectory": ".",
   "functions": {
     "api/*.js": {
       "maxDuration": 30
