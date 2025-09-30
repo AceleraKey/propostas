@@ -1,0 +1,14 @@
+{
+  "vercel": {
+    "token": "2JQNrwWquYYkVujhFZV3J3Il",
+    "projectId": "propostas-9x4s",
+    "orgId": "rafael-gandarelas-projects",
+    "autoDeploy": true,
+    "deployOnSave": false
+  },
+  "deploy": {
+    "command": "./deploy.sh",
+    "autoCommit": true,
+    "pushToGit": true
+  }
+}
