@@ -663,29 +663,28 @@
         }
 
         async function uploadImage(file, type) {
-            const formData = new FormData();
-            formData.append('image', file);
-            formData.append('type', type);
-
             try {
-                const response = await fetch('/api/upload', {
-                    method: 'POST',
-                    body: formData
-                });
+                // Create a local URL for the image
+                const imageUrl = URL.createObjectURL(file);
+                const imageData = {
+                    id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+                    url: imageUrl,
+                    name: file.name,
+                    size: file.size
+                };
 
-                const result = await response.json();
-                if (result.success) {
-                    if (type === 'hero') {
-                        projectData.heroImages.push(result.data);
-                        displayHeroPreview();
-                    } else if (type === 'floorPlan') {
-                        projectData.floorPlan = result.data;
-                        displayFloorPlanPreview();
-                    }
+                if (type === 'hero') {
+                    projectData.heroImages.push(imageData);
+                    displayHeroPreview();
+                } else if (type === 'floorPlan') {
+                    projectData.floorPlan = imageData;
+                    displayFloorPlanPreview();
                 }
+                
+                console.log('Imagem carregada com sucesso:', imageData);
             } catch (error) {
                 console.error('Erro no upload:', error);
-                alert('Erro ao fazer upload da imagem.');
+                alert('Erro ao carregar a imagem: ' + error.message);
             }
         }
 
@@ -836,25 +835,20 @@
                 // Calculate total value
                 projectData.totalValue = calculateTotalValue();
 
-                // Save proposal
-                const response = await fetch('/api/proposals', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(projectData)
-                });
+                // Simulate a small delay for better UX
+                await new Promise(resolve => setTimeout(resolve, 1000));
 
-                const result = await response.json();
-                if (result.success) {
-                    // Open proposal in new window
-                    const proposalWindow = window.open('', '_blank');
-                    proposalWindow.document.write(generateProposalHTML());
-                    proposalWindow.document.close();
-                }
+                // Generate proposal directly without API call
+                const proposalWindow = window.open('', '_blank');
+                proposalWindow.document.write(generateProposalHTML());
+                proposalWindow.document.close();
+                
+                // Show success message
+                alert('Proposta gerada com sucesso!');
+                
             } catch (error) {
                 console.error('Erro ao gerar proposta:', error);
-                alert('Erro ao gerar proposta.');
+                alert('Erro ao gerar proposta: ' + error.message);
             } finally {
                 document.getElementById('loadingOverlay').classList.remove('show');
             }
